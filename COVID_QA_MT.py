@@ -107,21 +107,30 @@ def translate(data):
             #print(translated_context)
         
             story = ''
-            for sentence in context:
-                tokenized_sentence = tokenizer.prepare_seq2seq_batch([sentence], return_tensors='pt')
-                translation_sentence = model.generate(**tokenized_sentence.to(cuda))
-                translated_sentence = tokenizer.batch_decode(translation_sentence, skip_special_tokens=False)
-                #print(len(translated_sentence))
-                translated_sentence = translated_sentence[0].replace('<pad>','')
-                story = story + translated_sentence + '。'
+
+            for j in range(0,len(context),translation_batch_size):
+                tokenized_context = tokenizer.prepare_seq2seq_batch(context[j:j+translation_batch_size], return_tensors="pt")
+                translated_context = model.generate(**tokenized_context.to(cuda))
+                translated_context = tokenizer.batch_decode(translated_context, skip_special_tokens=True)
+                if story:
+                    story = story+'。'+'。'.join(translated_context)
+                else:
+                    story = '。'.join(translated_context)
+            # for sentence in context:
+            #     tokenized_sentence = tokenizer.prepare_seq2seq_batch([sentence], return_tensors='pt')
+            #     translation_sentence = model.generate(**tokenized_sentence.to(cuda))
+            #     translated_sentence = tokenizer.batch_decode(translation_sentence, skip_special_tokens=True)
+                # print(len(translated_sentence))
+                # translated_sentence = translated_sentence[0].replace('<pad>','')
+                # story = story + translated_sentence + '。'
             translated_data['context'].append(story)
             story_p = story
             document_id = data[i]['document_id']
         
         
         df = pd.DataFrame(translated_data,columns=['answers', 'context', 'document_id', 'id', 'is_impossible', 'question'])
-        df.to_csv(r'COVID_QA_es.csv', index=False)
+        df.to_csv(r'COVID_QA_zh.csv', index=False)
     
     
-translate(dataset)
-
+# translate(dataset)
+translate(dataset, translation_batch_size=25)
